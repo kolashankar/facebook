@@ -291,8 +291,6 @@ Use responsibly and ethically.
 
 ## 👨‍💻 Credits
 
-**Created by:** E1 Agent (Emergent Labs)  
-**Inspired by:** Various web security demonstrations  
 **Purpose:** Education and awareness  
 **Difficulty:** EXTREME ⭐⭐⭐⭐⭐
 
