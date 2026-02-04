@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@/App.css";
 
-// Popup types defined outside component to avoid recreation
+// Popup types defined outside component
 const popupTypes = [
   { type: 'security', title: 'SECURITY ALERT', message: 'Suspicious activity detected. Click OK to verify your identity.', buttons: ['OK', 'Cancel'] },
   { type: 'warning', title: 'WARNING', message: 'Your system files are corrupted. Accept to scan now.', buttons: ['Accept', 'Decline'] },
@@ -25,6 +25,93 @@ const popupTypes = [
   { type: 'backup', title: 'Backup Failed', message: 'Unable to complete system backup. Try again?', buttons: ['Retry', 'Cancel'] }
 ];
 
+// MovingPopup component outside main App
+const MovingPopup = ({ popup, onClose, onFakeClose }) => {
+  const [pos, setPos] = useState({ x: popup.x, y: popup.y });
+
+  useEffect(() => {
+    if (popup.moving) {
+      const interval = setInterval(() => {
+        setPos(prev => ({
+          x: Math.max(0, Math.min(window.innerWidth - 400, prev.x + (Math.random() - 0.5) * 50)),
+          y: Math.max(0, Math.min(window.innerHeight - 300, prev.y + (Math.random() - 0.5) * 50))
+        }));
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [popup.moving]);
+
+  return (
+    <div
+      data-testid={`popup-${popup.id}`}
+      className="popup"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        position: 'fixed',
+        zIndex: 1000 + popup.id,
+        backgroundColor: 'white',
+        border: '2px solid #ccc',
+        borderRadius: '8px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        minWidth: '400px',
+        maxWidth: '500px'
+      }}
+    >
+      <div style={{
+        background: popup.type === 'error' ? '#cc0000' : popup.type === 'warning' ? '#ff9800' : '#0066cc',
+        color: 'white',
+        padding: '8px 12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderRadius: '6px 6px 0 0'
+      }}>
+        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{popup.title}</span>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onFakeClose();
+          }}
+          data-testid={`fake-close-${popup.id}`}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            fontSize: '20px',
+            cursor: 'pointer',
+            padding: '0 8px'
+          }}
+        >×</button>
+      </div>
+      <div style={{ padding: '20px' }}>
+        <p style={{ margin: '0 0 20px 0', color: '#333' }}>{popup.message}</p>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          {popup.buttons.map((btn, idx) => (
+            <button
+              key={idx}
+              data-testid={`popup-button-${popup.id}-${idx}`}
+              onClick={() => onClose(popup.id, idx)}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: idx === 0 ? '#0066cc' : '#e0e0e0',
+                color: idx === 0 ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              {btn}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [popups, setPopups] = useState([]);
   const [showFacebook, setShowFacebook] = useState(false);
@@ -35,18 +122,44 @@ function App() {
   const audioRefs = useRef([]);
   const popupCounter = useRef(0);
 
-  // Create popup function with useCallback
-  const createPopup = useCallback(() => {
+  const createPopup = () => {
     const randomType = popupTypes[Math.floor(Math.random() * popupTypes.length)];
     const newPopup = {
       id: popupCounter.current++,
       ...randomType,
-      x: Math.random() * (Math.max(100, window.innerWidth - 400)),
-      y: Math.random() * (Math.max(100, window.innerHeight - 300)),
+      x: Math.random() * Math.max(0, window.innerWidth - 400),
+      y: Math.random() * Math.max(0, window.innerHeight - 300),
       moving: Math.random() < 0.4
     };
     setPopups(prev => [...prev, newPopup]);
-  }, []);
+  };
+
+  const handlePopupClick = (popupId) => {
+    setPopups(prev => prev.filter(p => p.id !== popupId));
+    
+    // Each click creates 2-5 new popups (exponential difficulty)
+    const newPopupCount = Math.floor(Math.random() * 4) + 2;
+    for (let i = 0; i < newPopupCount; i++) {
+      setTimeout(() => createPopup(), i * 200);
+    }
+
+    // Random effects on click
+    if (Math.random() < 0.3) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
+
+    // After 50 popups have been created, show Facebook
+    if (popupCounter.current > 50) {
+      setShowFacebook(true);
+    }
+  };
+
+  const handleFakeClose = () => {
+    createPopup();
+    createPopup();
+    createPopup();
+  };
 
   useEffect(() => {
     // Flood browser history
@@ -86,7 +199,7 @@ function App() {
     setTimeout(() => createPopup(), 1500);
     
     // Play annoying audio
-    const playAnnoyingAudio = () => {
+    const playAudio = () => {
       const audioSources = [
         'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
         'https://www.soundjay.com/misc/sounds/fail-buzzer-03.mp3',
@@ -101,7 +214,7 @@ function App() {
         audioRefs.current.push(audio);
       });
     };
-    playAnnoyingAudio();
+    playAudio();
     
     // Random screen effects
     const effectInterval = setInterval(() => {
@@ -136,120 +249,7 @@ function App() {
       clearInterval(effectInterval);
       clearInterval(cursorInterval);
     };
-  }, [createPopup]);
-
-  const handlePopupClick = useCallback((popupId, buttonIndex) => {
-    setPopups(prev => prev.filter(p => p.id !== popupId));
-    
-    // Each click creates 2-5 new popups (exponential difficulty)
-    const newPopupCount = Math.floor(Math.random() * 4) + 2;
-    for (let i = 0; i < newPopupCount; i++) {
-      setTimeout(() => createPopup(), i * 200);
-    }
-
-    // Random effects on click
-    if (Math.random() < 0.3) {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-    }
-
-    // After 50 popups have been closed, show Facebook
-    if (popupCounter.current > 50) {
-      setShowFacebook(true);
-    }
-  }, [createPopup]);
-
-  const MovingPopup = ({ popup }) => {
-    const [pos, setPos] = useState({ x: popup.x, y: popup.y });
-    const moveInterval = useRef(null);
-
-    useEffect(() => {
-      if (popup.moving) {
-        moveInterval.current = setInterval(() => {
-          setPos(prev => ({
-            x: Math.max(0, Math.min(window.innerWidth - 400, prev.x + (Math.random() - 0.5) * 50)),
-            y: Math.max(0, Math.min(window.innerHeight - 300, prev.y + (Math.random() - 0.5) * 50))
-          }));
-        }, 500);
-      }
-      return () => clearInterval(moveInterval.current);
-    }, [popup.moving]);
-
-    // Fake close button that creates more popups
-    const handleFakeClose = (e) => {
-      e.stopPropagation();
-      createPopup();
-      createPopup();
-      createPopup();
-    };
-
-    return (
-      <div
-        data-testid={`popup-${popup.id}`}
-        className="popup"
-        style={{
-          left: pos.x,
-          top: pos.y,
-          position: 'fixed',
-          zIndex: 1000 + popup.id,
-          backgroundColor: 'white',
-          border: '2px solid #ccc',
-          borderRadius: '8px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          minWidth: '400px',
-          maxWidth: '500px'
-        }}
-      >
-        <div style={{
-          background: popup.type === 'error' ? '#cc0000' : popup.type === 'warning' ? '#ff9800' : '#0066cc',
-          color: 'white',
-          padding: '8px 12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderRadius: '6px 6px 0 0'
-        }}>
-          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{popup.title}</span>
-          <button 
-            onClick={handleFakeClose}
-            data-testid={`fake-close-${popup.id}`}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              fontSize: '20px',
-              cursor: 'pointer',
-              padding: '0 8px'
-            }}
-          >×</button>
-        </div>
-        <div style={{ padding: '20px' }}>
-          <p style={{ margin: '0 0 20px 0', color: '#333' }}>{popup.message}</p>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            {popup.buttons.map((btn, idx) => (
-              <button
-                key={idx}
-                data-testid={`popup-button-${popup.id}-${idx}`}
-                onClick={() => handlePopupClick(popup.id, idx)}
-                style={{
-                  padding: '8px 20px',
-                  backgroundColor: idx === 0 ? '#0066cc' : '#e0e0e0',
-                  color: idx === 0 ? 'white' : '#333',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                {btn}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  }, []);
 
   if (showFacebook) {
     return (
@@ -282,11 +282,9 @@ function App() {
             <button 
               data-testid="facebook-accept"
               onClick={() => {
-                createPopup();
-                createPopup();
-                createPopup();
-                createPopup();
-                createPopup();
+                for (let i = 0; i < 5; i++) {
+                  setTimeout(() => createPopup(), i * 100);
+                }
               }}
               style={{
                 padding: '12px 32px',
@@ -304,9 +302,9 @@ function App() {
             <button 
               data-testid="facebook-ignore"
               onClick={() => {
-                createPopup();
-                createPopup();
-                createPopup();
+                for (let i = 0; i < 3; i++) {
+                  setTimeout(() => createPopup(), i * 100);
+                }
               }}
               style={{
                 padding: '12px 32px',
@@ -380,13 +378,18 @@ function App() {
             Can you escape? 😈
           </p>
           <p style={{ fontSize: '14px', marginTop: '20px', opacity: 0.5 }}>
-            Popups closed: {popupCounter.current} / 50
+            Popups created: {popupCounter.current} / 50
           </p>
         </div>
       </div>
 
       {popups.map(popup => (
-        <MovingPopup key={popup.id} popup={popup} />
+        <MovingPopup 
+          key={popup.id} 
+          popup={popup} 
+          onClose={handlePopupClick}
+          onFakeClose={handleFakeClose}
+        />
       ))}
     </div>
   );
