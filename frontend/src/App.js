@@ -75,7 +75,7 @@ function App() {
         <div>
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>🎮 THE ULTIMATE POPUP TRAP 🎮</h1>
           <p style={{ fontSize: '20px', opacity: 0.8 }}>Can you escape? 😈</p>
-          <p style={{ fontSize: '14px', marginTop: '15px', opacity: 0.5' }}>Popups: {counter.current}</p>
+          <p style={{ fontSize: '14px', marginTop: '15px', opacity: 0.5 }}>Popups: {counter.current}</p>
         </div>
       </div>
 
