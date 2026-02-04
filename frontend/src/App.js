@@ -157,7 +157,7 @@ function App() {
     if (popupCounter.current > 50) {
       setShowFacebook(true);
     }
-  };
+  }, [createPopup]);
 
   const MovingPopup = ({ popup }) => {
     const [pos, setPos] = useState({ x: popup.x, y: popup.y });
