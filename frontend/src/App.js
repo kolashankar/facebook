@@ -1,5 +1,29 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import "@/App.css";
+
+// Popup types defined outside component to avoid recreation
+const popupTypes = [
+  { type: 'security', title: 'SECURITY ALERT', message: 'Suspicious activity detected. Click OK to verify your identity.', buttons: ['OK', 'Cancel'] },
+  { type: 'warning', title: 'WARNING', message: 'Your system files are corrupted. Accept to scan now.', buttons: ['Accept', 'Decline'] },
+  { type: 'error', title: 'CRITICAL ERROR', message: 'Windows has encountered a fatal error. Click Continue to save your work.', buttons: ['Continue', 'Exit'] },
+  { type: 'virus', title: '⚠️ VIRUS DETECTED', message: '37 threats found! Click Clean to remove immediately.', buttons: ['Clean Now', 'Ignore'] },
+  { type: 'update', title: 'System Update Required', message: 'Your system is out of date. Install updates now?', buttons: ['Install', 'Remind Later'] },
+  { type: 'prize', title: '🎉 CONGRATULATIONS!', message: 'You are the 1,000,000th visitor! Claim your prize now!', buttons: ['Claim Prize', 'No Thanks'] },
+  { type: 'police', title: '🚨 FBI WARNING', message: 'Illegal activity detected from your IP address.', buttons: ['Pay Fine', 'Contact Lawyer'] },
+  { type: 'hacker', title: 'SYSTEM COMPROMISED', message: 'Your webcam is being accessed by hackers. Disconnect now!', buttons: ['Disconnect', 'Ignore'] },
+  { type: 'captcha', title: 'Verify You Are Human', message: 'Select all images with traffic lights', buttons: ['Verify', 'Skip'] },
+  { type: 'download', title: 'Download Complete', message: 'virus.exe has finished downloading. Open file?', buttons: ['Open', 'Delete'] },
+  { type: 'mac', title: 'macOS Alert', message: 'Your Mac is running slow. Optimize now?', buttons: ['Optimize', 'Cancel'] },
+  { type: 'chrome', title: 'Chrome Security', message: 'Your passwords may have been compromised.', buttons: ['Check Now', 'Ignore'] },
+  { type: 'paypal', title: 'PayPal Security', message: 'Unusual activity on your account. Verify identity.', buttons: ['Verify', 'Cancel'] },
+  { type: 'amazon', title: 'Amazon Notice', message: 'Your order has been cancelled. Refund pending.', buttons: ['View Order', 'OK'] },
+  { type: 'microsoft', title: 'Microsoft Account', message: 'Sign-in attempt from unknown location detected.', buttons: ['Verify', 'Ignore'] },
+  { type: 'flash', title: 'Adobe Flash Player', message: 'Flash Player is out of date. Update required.', buttons: ['Update', 'Cancel'] },
+  { type: 'java', title: 'Java Update Available', message: 'A newer version of Java is available.', buttons: ['Update', 'Later'] },
+  { type: 'battery', title: '🔋 Battery Low', message: 'Your battery is critically low (1%). Plug in charger.', buttons: ['OK', 'Dismiss'] },
+  { type: 'wifi', title: '📶 WiFi Disconnected', message: 'Lost connection to network. Reconnect?', buttons: ['Reconnect', 'Cancel'] },
+  { type: 'backup', title: 'Backup Failed', message: 'Unable to complete system backup. Try again?', buttons: ['Retry', 'Cancel'] }
+];
 
 function App() {
   const [popups, setPopups] = useState([]);
@@ -10,30 +34,6 @@ function App() {
   const [rotateScreen, setRotateScreen] = useState(0);
   const audioRefs = useRef([]);
   const popupCounter = useRef(0);
-
-  // Initial popup types with 20x difficulty
-  const popupTypes = [
-    { type: 'security', title: 'SECURITY ALERT', message: 'Suspicious activity detected. Click OK to verify your identity.', buttons: ['OK', 'Cancel'] },
-    { type: 'warning', title: 'WARNING', message: 'Your system files are corrupted. Accept to scan now.', buttons: ['Accept', 'Decline'] },
-    { type: 'error', title: 'CRITICAL ERROR', message: 'Windows has encountered a fatal error. Click Continue to save your work.', buttons: ['Continue', 'Exit'] },
-    { type: 'virus', title: '⚠️ VIRUS DETECTED', message: '37 threats found! Click Clean to remove immediately.', buttons: ['Clean Now', 'Ignore'] },
-    { type: 'update', title: 'System Update Required', message: 'Your system is out of date. Install updates now?', buttons: ['Install', 'Remind Later'] },
-    { type: 'prize', title: '🎉 CONGRATULATIONS!', message: 'You are the 1,000,000th visitor! Claim your prize now!', buttons: ['Claim Prize', 'No Thanks'] },
-    { type: 'police', title: '🚨 FBI WARNING', message: 'Illegal activity detected from your IP address.', buttons: ['Pay Fine', 'Contact Lawyer'] },
-    { type: 'hacker', title: 'SYSTEM COMPROMISED', message: 'Your webcam is being accessed by hackers. Disconnect now!', buttons: ['Disconnect', 'Ignore'] },
-    { type: 'captcha', title: 'Verify You Are Human', message: 'Select all images with traffic lights', buttons: ['Verify', 'Skip'] },
-    { type: 'download', title: 'Download Complete', message: 'virus.exe has finished downloading. Open file?', buttons: ['Open', 'Delete'] },
-    { type: 'mac', title: 'macOS Alert', message: 'Your Mac is running slow. Optimize now?', buttons: ['Optimize', 'Cancel'] },
-    { type: 'chrome', title: 'Chrome Security', message: 'Your passwords may have been compromised.', buttons: ['Check Now', 'Ignore'] },
-    { type: 'paypal', title: 'PayPal Security', message: 'Unusual activity on your account. Verify identity.', buttons: ['Verify', 'Cancel'] },
-    { type: 'amazon', title: 'Amazon Notice', message: 'Your order has been cancelled. Refund pending.', buttons: ['View Order', 'OK'] },
-    { type: 'microsoft', title: 'Microsoft Account', message: 'Sign-in attempt from unknown location detected.', buttons: ['Verify', 'Ignore'] },
-    { type: 'flash', title: 'Adobe Flash Player', message: 'Flash Player is out of date. Update required.', buttons: ['Update', 'Cancel'] },
-    { type: 'java', title: 'Java Update Available', message: 'A newer version of Java is available.', buttons: ['Update', 'Later'] },
-    { type: 'battery', title: '🔋 Battery Low', message: 'Your battery is critically low (1%). Plug in charger.', buttons: ['OK', 'Dismiss'] },
-    { type: 'wifi', title: '📶 WiFi Disconnected', message: 'Lost connection to network. Reconnect?', buttons: ['Reconnect', 'Cancel'] },
-    { type: 'backup', title: 'Backup Failed', message: 'Unable to complete system backup. Try again?', buttons: ['Retry', 'Cancel'] }
-  ];
 
   useEffect(() => {
     // Flood browser history
