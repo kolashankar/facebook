@@ -138,35 +138,7 @@ function App() {
     };
   }, [createPopup]);
 
-  const playAnnoyingAudio = () => {
-    const audioSources = [
-      'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
-      'https://www.soundjay.com/misc/sounds/fail-buzzer-03.mp3',
-      'https://www.soundjay.com/button/sounds/beep-07.mp3'
-    ];
-    
-    audioSources.forEach((src, idx) => {
-      const audio = new Audio(src);
-      audio.loop = true;
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
-      audioRefs.current.push(audio);
-    });
-  };
-
-  const createPopup = () => {
-    const randomType = popupTypes[Math.floor(Math.random() * popupTypes.length)];
-    const newPopup = {
-      id: popupCounter.current++,
-      ...randomType,
-      x: Math.random() * (window.innerWidth - 400),
-      y: Math.random() * (window.innerHeight - 300),
-      moving: Math.random() < 0.4
-    };
-    setPopups(prev => [...prev, newPopup]);
-  };
-
-  const handlePopupClick = (popupId, buttonIndex) => {
+  const handlePopupClick = useCallback((popupId, buttonIndex) => {
     setPopups(prev => prev.filter(p => p.id !== popupId));
     
     // Each click creates 2-5 new popups (exponential difficulty)
