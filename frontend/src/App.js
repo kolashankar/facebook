@@ -79,24 +79,27 @@ function App() {
         </div>
       </div>
 
-      {popups.map(p => (
-        <div key={p.id} style={{ position: 'fixed', left: p.x, top: p.y, zIndex: 1000 + p.id, background: 'white', border: '2px solid #ccc', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', minWidth: '400px', maxWidth: '500px' }}>
-          <div style={{ background: p.type === 'error' ? '#cc0000' : p.type === 'warning' ? '#ff9800' : '#0066cc', color: 'white', padding: '8px 12px', borderRadius: '6px 6px 0 0', display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{p.title}</span>
-            <button onClick={() => { addPopup(); addPopup(); addPopup(); }} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
-          </div>
-          <div style={{ padding: '20px' }}>
-            <p style={{ margin: '0 0 20px 0', color: '#333' }}>{p.message}</p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              {p.buttons.map((btn, idx) => (
-                <button key={idx} onClick={() => close(p.id)} style={{ padding: '8px 20px', background: idx === 0 ? '#0066cc' : '#e0e0e0', color: idx === 0 ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                  {btn}
-                </button>
-              ))}
+      {popups.map(p => {
+        const buttons = p.buttons || [];
+        return (
+          <div key={p.id} style={{ position: 'fixed', left: p.x, top: p.y, zIndex: 1000 + p.id, background: 'white', border: '2px solid #ccc', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', minWidth: '400px', maxWidth: '500px' }}>
+            <div style={{ background: p.type === 'error' ? '#cc0000' : p.type === 'warning' ? '#ff9800' : '#0066cc', color: 'white', padding: '8px 12px', borderRadius: '6px 6px 0 0', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{p.title}</span>
+              <button onClick={() => { addPopup(); addPopup(); addPopup(); }} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <p style={{ margin: '0 0 20px 0', color: '#333' }}>{p.message}</p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                {buttons.map((btn, idx) => (
+                  <button key={idx} onClick={() => close(p.id)} style={{ padding: '8px 20px', background: idx === 0 ? '#0066cc' : '#e0e0e0', color: idx === 0 ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                    {btn}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
