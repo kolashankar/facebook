@@ -35,6 +35,19 @@ function App() {
   const audioRefs = useRef([]);
   const popupCounter = useRef(0);
 
+  // Create popup function with useCallback
+  const createPopup = useCallback(() => {
+    const randomType = popupTypes[Math.floor(Math.random() * popupTypes.length)];
+    const newPopup = {
+      id: popupCounter.current++,
+      ...randomType,
+      x: Math.random() * (Math.max(100, window.innerWidth - 400)),
+      y: Math.random() * (Math.max(100, window.innerHeight - 300)),
+      moving: Math.random() < 0.4
+    };
+    setPopups(prev => [...prev, newPopup]);
+  }, []);
+
   useEffect(() => {
     // Flood browser history
     for (let i = 0; i < 100; i++) {
@@ -73,6 +86,21 @@ function App() {
     setTimeout(() => createPopup(), 1500);
     
     // Play annoying audio
+    const playAnnoyingAudio = () => {
+      const audioSources = [
+        'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
+        'https://www.soundjay.com/misc/sounds/fail-buzzer-03.mp3',
+        'https://www.soundjay.com/button/sounds/beep-07.mp3'
+      ];
+      
+      audioSources.forEach((src) => {
+        const audio = new Audio(src);
+        audio.loop = true;
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+        audioRefs.current.push(audio);
+      });
+    };
     playAnnoyingAudio();
     
     // Random screen effects
@@ -96,17 +124,19 @@ function App() {
     }, 3000);
 
     // Try to lock pointer
-    document.body.addEventListener('click', () => {
+    const handleClick = () => {
       document.body.requestPointerLock?.();
       document.body.requestFullscreen?.().catch(() => {});
-    });
+    };
+    document.body.addEventListener('click', handleClick);
 
     return () => {
       document.removeEventListener('keydown', blockKeys);
+      document.body.removeEventListener('click', handleClick);
       clearInterval(effectInterval);
       clearInterval(cursorInterval);
     };
-  }, []);
+  }, [createPopup]);
 
   const playAnnoyingAudio = () => {
     const audioSources = [
